@@ -2,33 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import type { MouseEvent, TouchEvent } from 'react'
 import './Carousel.css'
 import CarouselSlide from './CarouselSlide'
+import { SLIDE_WIDTH, CLONE_COUNT, AUTO_SLIDE_INTERVAL } from './config/carousel.constants'
+import type { CarouselItem, CarouselProps } from './config/carousel.types'
 
-/* =======================
-   Types
-======================= */
-
-export type CarouselItem = {
-  id: number
-  title: string
-  image: string
-  landing_page?: string
-}
-
-type CarouselProps = {
-  items: CarouselItem[]
-}
-
-/* =======================
-   Constants
-======================= */
-
-const SLIDE_WIDTH = 300
-const CLONE_COUNT = 3
-const AUTO_SLIDE_INTERVAL = 3000
-
-/* =======================
-   Component
-======================= */
+/**
+ * Component
+ */
 
 const Carousel: React.FC<CarouselProps> = ({ items }) => {
   // Clone items for infinite loop
@@ -52,9 +31,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
   const trackRef = useRef<HTMLDivElement | null>(null)
   const isDraggingRef = useRef<boolean>(false)
 
-  /* =======================
-     Auto slide
-  ======================= */
+  /**
+   * Auto slide
+   */
 
   const nextSlide = useCallback(() => {
     if (isDraggingRef.current || isTransitioning) return
@@ -80,9 +59,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     }
   }, [])
 
-  /* =======================
-     Infinite loop handling
-  ======================= */
+  /**
+   * Infinite loop handling
+   */
 
   const handleTransitionEnd = useCallback(() => {
     setIsTransitioning(false)
@@ -109,9 +88,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     trackRef.current.style.transition = ''
   }, [currentIndex, items.length])
 
-  /* =======================
-     Mouse events
-  ======================= */
+  /**
+   * Mouse events
+   */
 
   const preventDefault = (e: Event) => e.preventDefault()
 
@@ -173,9 +152,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     startAutoSlide()
   }, [handleMouseMove, startAutoSlide])
 
-  /* =======================
-     Touch events
-  ======================= */
+  /**
+   * Touch events
+   */
 
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
     isDraggingRef.current = true
@@ -205,18 +184,18 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     handleMouseUp()
   }, [handleMouseUp])
 
-  /* =======================
-     Click
-  ======================= */
+  /**
+   * Click
+   */
 
   const handleSlideClick = (landingPage?: string) => {
     if (hasMoved || !landingPage) return
     window.open(landingPage, '_blank')
   }
 
-  /* =======================
-     Effects
-  ======================= */
+  /**
+   * Effects
+   */
 
   useEffect(() => {
     startAutoSlide()
@@ -231,9 +210,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     }
   }, [currentIndex])
 
-  /* =======================
-     Render
-  ======================= */
+  /**
+   * Render
+   */
 
   return (
     <div className="carousel-container">

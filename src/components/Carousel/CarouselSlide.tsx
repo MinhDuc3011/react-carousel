@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import type { CarouselItem } from './Carousel'
+import type { CarouselItem } from './config/carousel.types'
 
 type CarouselSlideProps = {
   item: CarouselItem

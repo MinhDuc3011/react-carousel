@@ -41,24 +41,30 @@ react-carousel/
 ├── src/
 │   ├── components/
 │   │   └── Carousel/
-│   │       ├── Carousel.tsx          # Main carousel component with drag/swipe logic
-│   │       ├── CarouselSlide.tsx     # Individual slide component
-│   │       └── Carousel.css          # Carousel styling
+│   │       ├── config/
+│   │       │   ├── carousel.types.ts      # TypeScript type definitions
+│   │       │   └── carousel.constants.ts  # Configuration constants
+│   │       ├── Carousel.tsx               # Main carousel component with drag/swipe logic
+│   │       ├── CarouselSlide.tsx          # Individual slide component
+│   │       └── Carousel.css               # Carousel styling
 │   ├── data/
-│   │   └── carousel.mock.ts          # Mock data for carousel items
-│   ├── App.tsx                       # Root application component
-│   ├── main.tsx                      # Application entry point
-│   └── index.css                     # Global styles
-├── public/                           # Static assets
-├── package.json                      # Dependencies and scripts
-├── vite.config.ts                    # Vite configuration
-└── tsconfig.json                     # TypeScript configuration
+│   │   └── carousel.mock.ts               # Mock data for carousel items
+│   ├── App.tsx                            # Root application component
+│   ├── App.css                            # App styling
+│   ├── main.tsx                           # Application entry point
+│   └── index.css                          # Global styles
+├── public/                                # Static assets
+├── package.json                           # Dependencies and scripts
+├── vite.config.ts                         # Vite configuration
+└── tsconfig.json                          # TypeScript configuration
 ```
 
 ### Key Components
 
 - **Carousel.tsx**: Core carousel logic including infinite scroll, drag/swipe handling, auto-play, and state management
 - **CarouselSlide.tsx**: Renders individual slides with images and titles
+- **carousel.types.ts**: TypeScript type definitions for carousel items and props
+- **carousel.constants.ts**: Configuration constants (slide width, clone count, auto-slide interval)
 - **carousel.mock.ts**: Sample data structure for carousel items
 
 ## Drag & Swipe Implementation
