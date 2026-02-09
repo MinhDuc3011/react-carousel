@@ -25,11 +25,24 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
 
   // Refs
   const startX = useRef<number>(0)
-  const currentTranslate = useRef<number>(-CLONE_COUNT * SLIDE_WIDTH)
-  const prevTranslate = useRef<number>(-CLONE_COUNT * SLIDE_WIDTH)
+  const currentTranslate = useRef<number>(0)
+  const prevTranslate = useRef<number>(0)
   const autoSlideTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const isDraggingRef = useRef<boolean>(false)
+  const currentIndexRef = useRef<number>(CLONE_COUNT)
+  const slideWidthRef = useRef<number>(SLIDE_WIDTH)
+
+  // Get dynamic slide width
+  const getSlideWidth = useCallback(() => {
+    if (trackRef.current) {
+      const firstSlide = trackRef.current.firstElementChild as HTMLElement
+      if (firstSlide) {
+        return firstSlide.offsetWidth
+      }
+    }
+    return SLIDE_WIDTH
+  }, [])
 
   /**
    * Auto slide
@@ -39,13 +52,13 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     if (isDraggingRef.current || isTransitioning) return
 
     setIsTransitioning(true)
-    setCurrentIndex(prev => {
-      const next = prev + 1
-      currentTranslate.current = -next * SLIDE_WIDTH
-      prevTranslate.current = currentTranslate.current
-      return next
-    })
-  }, [isTransitioning])
+    const next = currentIndexRef.current + 1
+    currentIndexRef.current = next
+    setCurrentIndex(next)
+    const slideWidth = getSlideWidth()
+    currentTranslate.current = -next * slideWidth
+    prevTranslate.current = currentTranslate.current
+  }, [isTransitioning, getSlideWidth])
 
   const startAutoSlide = useCallback(() => {
     if (autoSlideTimer.current) clearInterval(autoSlideTimer.current)
@@ -67,26 +80,29 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     setIsTransitioning(false)
     if (!trackRef.current) return
 
-    if (currentIndex >= items.length + CLONE_COUNT) {
-      const realIndex =
-        CLONE_COUNT + (currentIndex - items.length - CLONE_COUNT)
+    const slideWidth = getSlideWidth()
 
+    if (currentIndexRef.current >= items.length + CLONE_COUNT) {
+      const realIndex = CLONE_COUNT + (currentIndexRef.current - items.length - CLONE_COUNT)
+      currentIndexRef.current = realIndex
       setCurrentIndex(realIndex)
-      currentTranslate.current = -realIndex * SLIDE_WIDTH
+      currentTranslate.current = -realIndex * slideWidth
     }
 
-    if (currentIndex < CLONE_COUNT) {
-      const realIndex = items.length + currentIndex
+    if (currentIndexRef.current < CLONE_COUNT) {
+      const realIndex = items.length + currentIndexRef.current
+      currentIndexRef.current = realIndex
       setCurrentIndex(realIndex)
-      currentTranslate.current = -realIndex * SLIDE_WIDTH
+      currentTranslate.current = -realIndex * slideWidth
     }
 
     prevTranslate.current = currentTranslate.current
     trackRef.current.style.transition = 'none'
     trackRef.current.style.transform = `translateX(${currentTranslate.current}px)`
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     trackRef.current.offsetHeight
     trackRef.current.style.transition = ''
-  }, [currentIndex, items.length])
+  }, [items.length, getSlideWidth])
 
   /**
    * Mouse events
@@ -95,6 +111,10 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
   const preventDefault = (e: Event) => e.preventDefault()
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    if (isTransitioning) {
+      return
+    }
+    
     e.preventDefault()
 
     isDraggingRef.current = true
@@ -104,9 +124,9 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     stopAutoSlide()
 
     trackRef.current?.classList.remove('transitioning')
-
-    document.addEventListener('mousemove', handleMouseMove as any)
-    document.addEventListener('mouseup', handleMouseUp as any)
+    document.addEventListener('mousemove', handleMouseMove)
+    // eslint-disable-next-line react-hooks/immutability
+    document.addEventListener('mouseup', handleMouseUp)
     document.addEventListener('selectstart', preventDefault)
   }
 
@@ -119,6 +139,7 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     if (Math.abs(deltaX) > 5) setHasMoved(true)
 
     currentTranslate.current = prevTranslate.current + deltaX
+    
     trackRef.current!.style.transform = `translateX(${currentTranslate.current}px)`
   }, [])
 
@@ -130,13 +151,13 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     trackRef.current?.classList.add('transitioning')
 
     const deltaX = currentTranslate.current - prevTranslate.current
+    const slideWidth = getSlideWidth()
 
     if (Math.abs(deltaX) >= 40) {
-      setCurrentIndex(prev => {
-        const next = deltaX > 0 ? prev - 1 : prev + 1
-        currentTranslate.current = -next * SLIDE_WIDTH
-        return next
-      })
+      const next = deltaX > 0 ? currentIndexRef.current - 1 : currentIndexRef.current + 1
+      currentIndexRef.current = next
+      setCurrentIndex(next)
+      currentTranslate.current = -next * slideWidth
       setIsTransitioning(true)
     } else {
       currentTranslate.current = prevTranslate.current
@@ -145,18 +166,22 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
     trackRef.current!.style.transform = `translateX(${currentTranslate.current}px)`
     prevTranslate.current = currentTranslate.current
 
-    document.removeEventListener('mousemove', handleMouseMove as any)
-    document.removeEventListener('mouseup', handleMouseUp as any)
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
     document.removeEventListener('selectstart', preventDefault)
 
     startAutoSlide()
-  }, [handleMouseMove, startAutoSlide])
+  }, [handleMouseMove, startAutoSlide, getSlideWidth])
 
   /**
    * Touch events
    */
 
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    if (isTransitioning) {
+      return
+    }
+    
     isDraggingRef.current = true
     setIsDragging(true)
     setHasMoved(false)
@@ -204,11 +229,30 @@ const Carousel: React.FC<CarouselProps> = ({ items }) => {
 
   useEffect(() => {
     if (!isDraggingRef.current) {
-      currentTranslate.current = -currentIndex * SLIDE_WIDTH
+      currentIndexRef.current = currentIndex
+      const slideWidth = getSlideWidth()
+      currentTranslate.current = -currentIndex * slideWidth
       prevTranslate.current = currentTranslate.current
       trackRef.current!.style.transform = `translateX(${currentTranslate.current}px)`
     }
-  }, [currentIndex])
+  }, [currentIndex, getSlideWidth])
+
+  // Initialize position on mount and resize
+  useEffect(() => {
+    const updatePosition = () => {
+      const slideWidth = getSlideWidth()
+      slideWidthRef.current = slideWidth
+      currentTranslate.current = -currentIndexRef.current * slideWidth
+      prevTranslate.current = currentTranslate.current
+      if (trackRef.current) {
+        trackRef.current.style.transform = `translateX(${currentTranslate.current}px)`
+      }
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    return () => window.removeEventListener('resize', updatePosition)
+  }, [getSlideWidth])
 
   /**
    * Render
