@@ -64,7 +64,7 @@ react-carousel/
 - **Carousel.tsx**: Core carousel logic including infinite scroll, drag/swipe handling, auto-play, and state management
 - **CarouselSlide.tsx**: Renders individual slides with images and titles
 - **carousel.types.ts**: TypeScript type definitions for carousel items and props
-- **carousel.constants.ts**: Configuration constants (slide width, clone count, auto-slide interval)
+- **carousel.constants.ts**: Configuration constants (default slide width, clone count, auto-slide interval)
 - **carousel.mock.ts**: Sample data structure for carousel items
 
 ## Drag & Swipe Implementation
@@ -102,10 +102,11 @@ Touch interactions mirror mouse drag logic using touch events:
 
 ### Key Technical Details
 
-- **Refs over State**: Uses `useRef` for `startX`, `currentTranslate`, and `prevTranslate` to avoid re-renders during drag
+- **Refs over State**: Uses `useRef` for `startX`, `currentTranslate`, `prevTranslate`, and `currentIndexRef` to avoid re-renders and stale closures during drag
 - **Global Event Listeners**: Mouse events attached to `document` to track movement outside carousel bounds
 - **Transform over Position**: Uses CSS `transform: translateX()` for hardware-accelerated, smooth animations
 - **Threshold Detection**: 40px minimum drag distance required to trigger slide change
+- **Dynamic Slide Width**: Calculates slide width from DOM instead of using fixed constant, ensuring responsive behavior across devices
 
 ## Edge Case Handling
 
@@ -212,6 +213,44 @@ trackRef.current?.classList.add('transitioning')
 - Allows vertical scrolling to work normally
 - Improves touch responsiveness on mobile devices
 
+### 7. Responsive Slide Width
+
+**Problem**: Fixed slide width causes misalignment on different screen sizes (mobile vs desktop).
+
+**Solution**: Dynamic width calculation from DOM
+```typescript
+const getSlideWidth = useCallback(() => {
+  if (trackRef.current) {
+    const firstSlide = trackRef.current.firstElementChild as HTMLElement
+    if (firstSlide) return firstSlide.offsetWidth
+  }
+  return SLIDE_WIDTH
+}, [])
+```
+
+**Mechanism**:
+- Reads actual slide width from rendered DOM element
+- Updates on window resize to handle orientation changes
+- Ensures correct positioning across all device sizes (300px desktop, 250px mobile)
+- Prevents showing wrong slide on initial load
+
+### 8. Fast Drag Prevention
+
+**Problem**: Rapid consecutive drags can cause index to exceed boundaries, showing blank slides.
+
+**Solution**: Block new drag interactions during transitions
+```typescript
+const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+  if (isTransitioning) return  // Block if animating
+  // ... drag logic
+}
+```
+
+**Mechanism**:
+- `isTransitioning` flag prevents new drag while slide is animating
+- `currentIndexRef` prevents stale closure issues during rapid interactions
+- Ensures index stays within valid range (CLONE_COUNT to items.length + CLONE_COUNT)
+
 ## Technologies Used
 
 - **React 19.2.0**: UI library
@@ -228,5 +267,7 @@ trackRef.current?.classList.add('transitioning')
 ✅ Pause on hover  
 ✅ Click prevention during drag  
 ✅ Smooth animations with hardware acceleration  
-✅ Responsive design  
-✅ TypeScript type safety
+✅ Responsive design with dynamic slide sizing  
+✅ TypeScript type safety  
+✅ Fast drag protection to prevent boundary overflow  
+✅ Stale closure prevention with ref-based state management
